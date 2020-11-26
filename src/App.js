@@ -59,9 +59,9 @@ function App() {
 			API.graphql(graphqlOperation(deleteNote, { input: { id } }))
 				.then((response) => {
 					// console.log(response.data.deleteNote.id);
-					setNotes(
-						notes.filter((note) => note.id != response.data.deleteNote.id)
-					);
+					const deletedNoteId = response.data.deleteNote.id;
+					const updatedNotes = notes.filter((note) => note.id != deletedNoteId);
+					setNotes(updatedNotes);
 				})
 				.catch((err) => console.error(err));
 		};
@@ -90,6 +90,9 @@ function App() {
 					? notes.map((note) => (
 							<div key={note.createdAt}>
 								<li>{note.note}</li>
+								<button>
+									<i class="fa fa-edit" style={{ color: "black" }}></i>
+								</button>
 								<button onClick={handleDeleteNote(note.id)}>
 									<span>&times;</span>
 								</button>
