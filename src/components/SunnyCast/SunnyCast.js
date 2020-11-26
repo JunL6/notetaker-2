@@ -19,7 +19,7 @@ export default function SunnyCast() {
 				img={img_frank}
 				name="Frank"
 				jobTitle="sweatshop owner"
-				description={`"You gotta pay him the troll toll."`}
+				description={`"You gotta pay the troll toll."`}
 			/>
 			<CastCard
 				img={img_dennis}
