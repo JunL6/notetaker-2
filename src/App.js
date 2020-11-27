@@ -34,8 +34,8 @@ function App() {
 
 	function compareNotes(a, b) {
 		if (new Date(a.createdAt).getTime() < new Date(b.createdAt).getTime())
-			return -1;
-		else return 1;
+			return 1;
+		else return -1;
 	}
 
 	function addNewNote(event) {
