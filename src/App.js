@@ -17,7 +17,8 @@ import { createNote, deleteNote, updateNote } from "./graphql/mutations";
 function App() {
 	const [inputValue, setInputValue] = useState("");
 	const [notes, setNotes] = useState([]);
-	const [editable, setEditable] = useState({ id: 0, text: "" });
+	const INITIAL_EDITABLE = { id: 0, text: "" };
+	const [editable, setEditable] = useState(INITIAL_EDITABLE);
 	const [hoveredId, setHoveredId] = useState(0);
 
 	useEffect(() => {
@@ -110,14 +111,17 @@ function App() {
 		});
 
 		setNotes(updatedNotes);
-		setEditable({ id: 0, text: "" });
+		setEditable(INITIAL_EDITABLE);
+	}
+
+	function onHandleCancelEdit() {
+		setEditable(INITIAL_EDITABLE);
 	}
 
 	return (
 		<div className="App">
 			{console.log(notes)}
 			<AmplifySignOut />
-			{/* <SunnyCast /> */}
 			<section>
 				<h1>notetaking app</h1>
 				<form onSubmit={addNewNote}>
@@ -149,6 +153,7 @@ function App() {
 												onChange={handleEditNote}
 											/>
 											<button type="submit">update</button>
+											<button onClick={onHandleCancelEdit}>cancel</button>
 										</form>
 									) : (
 										<span>{note.note}</span>
