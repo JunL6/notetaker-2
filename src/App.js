@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPen } from "@fortawesome/free-solid-svg-icons";
 
 import { listNotes } from "./graphql/queries";
-import { createNote, deleteNote } from "./graphql/mutations";
+import { createNote, deleteNote, updateNote } from "./graphql/mutations";
 
 // const notes = [
 // 	{ id: 1, note: "laundry" },
@@ -17,7 +17,8 @@ import { createNote, deleteNote } from "./graphql/mutations";
 function App() {
 	const [inputValue, setInputValue] = useState("");
 	const [notes, setNotes] = useState([]);
-	const [editableId, setEditableId] = useState(0);
+	const [editable, setEditable] = useState({ id: 0, text: "" });
+	const [hoveredId, setHoveredId] = useState(0);
 
 	useEffect(() => {
 		fetchNotes();
@@ -70,18 +71,46 @@ function App() {
 			.then((response) => {
 				// console.log(response.data.deleteNote.id);
 				const deletedNoteId = response.data.deleteNote.id;
-				const updatedNotes = notes.filter((note) => note.id != deletedNoteId);
+				const updatedNotes = notes.filter((note) => note.id !== deletedNoteId);
 				setNotes(updatedNotes);
 			})
 			.catch((err) => console.error(err));
 	}
 
 	function handleMouseEnter(id) {
-		setEditableId(id);
+		setHoveredId(id);
 	}
 
 	function handleMouseLeave() {
-		setEditableId(0);
+		setHoveredId(0);
+	}
+
+	function handleToggleEdit(id, noteText) {
+		setEditable({ id, text: noteText });
+	}
+
+	function handleEditNote(event) {
+		setEditable({ id: editable.id, text: event.target.value });
+	}
+
+	async function handleUpdateNote(event) {
+		event.preventDefault();
+		const response = await API.graphql(
+			graphqlOperation(updateNote, {
+				input: {
+					id: editable.id,
+					note: editable.text,
+				},
+			})
+		);
+		const updatedNote = response.data.updateNote;
+		const updatedNotes = notes.map((note) => {
+			if (note.id === updatedNote.id) return updatedNote;
+			else return note;
+		});
+
+		setNotes(updatedNotes);
+		setEditable({ id: 0, text: "" });
 	}
 
 	return (
@@ -105,7 +134,6 @@ function App() {
 			<div>
 				{notes.length > 0
 					? notes.map((note) => {
-							let editable = false;
 							return (
 								<div
 									key={note.createdAt}
@@ -113,14 +141,23 @@ function App() {
 									onMouseEnter={() => handleMouseEnter(note.id)}
 									onMouseLeave={handleMouseLeave}
 								>
-									{editable ? (
-										<input type="text" value={note.note} />
+									{Boolean(editable.id) && editable.id == note.id ? (
+										<form onSubmit={handleUpdateNote}>
+											<input
+												type="text"
+												value={editable.text}
+												onChange={handleEditNote}
+											/>
+											<button type="submit">update</button>
+										</form>
 									) : (
-										<li>{note.note}</li>
+										<span>{note.note}</span>
 									)}
 
-									{Boolean(editableId) && note.id == editableId && (
-										<button>
+									{Boolean(hoveredId) && note.id === hoveredId && (
+										<button
+											onClick={() => handleToggleEdit(note.id, note.note)}
+										>
 											<FontAwesomeIcon icon={faPen} />
 										</button>
 									)}
