@@ -17,6 +17,7 @@ import { createNote, deleteNote } from "./graphql/mutations";
 function App() {
 	const [inputValue, setInputValue] = useState("");
 	const [notes, setNotes] = useState([]);
+	const [editableId, setEditableId] = useState(0);
 
 	useEffect(() => {
 		fetchNotes();
@@ -75,6 +76,14 @@ function App() {
 			.catch((err) => console.error(err));
 	}
 
+	function handleMouseEnter(id) {
+		setEditableId(id);
+	}
+
+	function handleMouseLeave() {
+		setEditableId(0);
+	}
+
 	return (
 		<div className="App">
 			{console.log(notes)}
@@ -98,21 +107,24 @@ function App() {
 					? notes.map((note) => {
 							let editable = false;
 							return (
-								<div key={note.createdAt}>
+								<div
+									key={note.createdAt}
+									style={{ border: "1px solid orange" }}
+									onMouseEnter={() => handleMouseEnter(note.id)}
+									onMouseLeave={handleMouseLeave}
+								>
 									{editable ? (
 										<input type="text" value={note.note} />
 									) : (
 										<li>{note.note}</li>
 									)}
 
-									<button
-										onClick={() => {
-											editable = !editable;
-										}}
-									>
-										{/* <i class="fa fa-edit" style={{ color: "black" }}></i> */}
-										<FontAwesomeIcon icon={faPen} />
-									</button>
+									{Boolean(editableId) && note.id == editableId && (
+										<button>
+											<FontAwesomeIcon icon={faPen} />
+										</button>
+									)}
+
 									<button onClick={() => handleDeleteNote(note.id)}>
 										<span>&times;</span>
 									</button>
