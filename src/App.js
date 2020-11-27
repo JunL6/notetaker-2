@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { withAuthenticator, AmplifySignOut } from "@aws-amplify/ui-react";
 import { API, graphqlOperation } from "aws-amplify";
 import "./App.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPen } from "@fortawesome/free-solid-svg-icons";
+
 import { listNotes } from "./graphql/queries";
 import { createNote, deleteNote } from "./graphql/mutations";
 
@@ -28,12 +31,6 @@ function App() {
 		}
 	}
 
-	// function fetchNotes() {
-	// 	API.graphql(graphqlOperation(listNotes)).then(
-	// 		(data) => console.log(data)
-	// 		// console.log(data.listNotes.items)
-	// 	);
-	// }
 	function compareNotes(a, b) {
 		if (new Date(a.createdAt).getTime() < new Date(b.createdAt).getTime())
 			return -1;
@@ -54,17 +51,28 @@ function App() {
 			.catch((err) => console.error(err));
 	}
 
+	// function handleDeleteNote(id) {
+	// 	return () => {
+	// 		API.graphql(graphqlOperation(deleteNote, { input: { id } }))
+	// 			.then((response) => {
+	// 				// console.log(response.data.deleteNote.id);
+	// 				const deletedNoteId = response.data.deleteNote.id;
+	// 				const updatedNotes = notes.filter((note) => note.id != deletedNoteId);
+	// 				setNotes(updatedNotes);
+	// 			})
+	// 			.catch((err) => console.error(err));
+	// 	};
+	// }
+
 	function handleDeleteNote(id) {
-		return () => {
-			API.graphql(graphqlOperation(deleteNote, { input: { id } }))
-				.then((response) => {
-					// console.log(response.data.deleteNote.id);
-					const deletedNoteId = response.data.deleteNote.id;
-					const updatedNotes = notes.filter((note) => note.id != deletedNoteId);
-					setNotes(updatedNotes);
-				})
-				.catch((err) => console.error(err));
-		};
+		API.graphql(graphqlOperation(deleteNote, { input: { id } }))
+			.then((response) => {
+				// console.log(response.data.deleteNote.id);
+				const deletedNoteId = response.data.deleteNote.id;
+				const updatedNotes = notes.filter((note) => note.id != deletedNoteId);
+				setNotes(updatedNotes);
+			})
+			.catch((err) => console.error(err));
 	}
 
 	return (
@@ -87,17 +95,30 @@ function App() {
 			{/* note list */}
 			<div>
 				{notes.length > 0
-					? notes.map((note) => (
-							<div key={note.createdAt}>
-								<li>{note.note}</li>
-								<button>
-									<i class="fa fa-edit" style={{ color: "black" }}></i>
-								</button>
-								<button onClick={handleDeleteNote(note.id)}>
-									<span>&times;</span>
-								</button>
-							</div>
-					  ))
+					? notes.map((note) => {
+							let editable = false;
+							return (
+								<div key={note.createdAt}>
+									{editable ? (
+										<input type="text" value={note.note} />
+									) : (
+										<li>{note.note}</li>
+									)}
+
+									<button
+										onClick={() => {
+											editable = !editable;
+										}}
+									>
+										{/* <i class="fa fa-edit" style={{ color: "black" }}></i> */}
+										<FontAwesomeIcon icon={faPen} />
+									</button>
+									<button onClick={() => handleDeleteNote(note.id)}>
+										<span>&times;</span>
+									</button>
+								</div>
+							);
+					  })
 					: "no notes"}
 			</div>
 		</div>
