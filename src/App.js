@@ -7,12 +7,7 @@ import { faPen } from "@fortawesome/free-solid-svg-icons";
 
 import { listNotes } from "./graphql/queries";
 import { createNote, deleteNote, updateNote } from "./graphql/mutations";
-
-// const notes = [
-// 	{ id: 1, note: "laundry" },
-// 	{ id: 2, note: "the Great Gatsby" },
-// 	{ id: 3, note: "dinner" },
-// ];
+import { onCreateNote } from "./graphql/subscriptions";
 
 function App() {
 	const [inputValue, setInputValue] = useState("");
@@ -20,15 +15,32 @@ function App() {
 	const INITIAL_EDITABLE = { id: 0, text: "" };
 	const [editable, setEditable] = useState(INITIAL_EDITABLE);
 	const [hoveredId, setHoveredId] = useState(0);
+	const [lalaland, setLalaland] = useState(1000);
 
 	useEffect(() => {
 		fetchNotes();
+
+		const createNoteListener = API.graphql(
+			graphqlOperation(onCreateNote)
+		).subscribe({
+			next: (noteData) => {
+				const newNote = noteData.value.data.onCreateNote;
+				console.log(lalaland);
+				// debugger;
+				console.log(notes);
+			},
+		});
+
+		return function cleanup() {
+			createNoteListener.unsubscribe();
+		};
 	}, []);
 
 	async function fetchNotes() {
 		try {
 			const result = await API.graphql(graphqlOperation(listNotes));
 			setNotes(result.data.listNotes.items.sort(compareNotes));
+			setLalaland(2000);
 		} catch (error) {
 			console.error(error);
 		}
@@ -45,7 +57,8 @@ function App() {
 		if (!inputValue) return;
 		API.graphql(graphqlOperation(createNote, { input: { note: inputValue } }))
 			.then((response) => {
-				console.log(response);
+				// console.log(response);
+
 				setInputValue("");
 				/* update local array of notes */
 				const newNotes = [response.data.createNote, ...notes];
@@ -53,19 +66,6 @@ function App() {
 			})
 			.catch((err) => console.error(err));
 	}
-
-	// function handleDeleteNote(id) {
-	// 	return () => {
-	// 		API.graphql(graphqlOperation(deleteNote, { input: { id } }))
-	// 			.then((response) => {
-	// 				// console.log(response.data.deleteNote.id);
-	// 				const deletedNoteId = response.data.deleteNote.id;
-	// 				const updatedNotes = notes.filter((note) => note.id != deletedNoteId);
-	// 				setNotes(updatedNotes);
-	// 			})
-	// 			.catch((err) => console.error(err));
-	// 	};
-	// }
 
 	function handleDeleteNote(id) {
 		API.graphql(graphqlOperation(deleteNote, { input: { id } }))
@@ -146,7 +146,10 @@ function App() {
 									onMouseLeave={handleMouseLeave}
 								>
 									{Boolean(editable.id) && editable.id == note.id ? (
-										<form onSubmit={handleUpdateNote}>
+										<form
+											onSubmit={handleUpdateNote}
+											style={{ display: "inline-block" }}
+										>
 											<input
 												type="text"
 												value={editable.text}
@@ -160,16 +163,17 @@ function App() {
 									)}
 
 									{Boolean(hoveredId) && note.id === hoveredId && (
-										<button
-											onClick={() => handleToggleEdit(note.id, note.note)}
-										>
-											<FontAwesomeIcon icon={faPen} />
-										</button>
+										<>
+											<button
+												onClick={() => handleToggleEdit(note.id, note.note)}
+											>
+												<FontAwesomeIcon icon={faPen} />
+											</button>
+											<button onClick={() => handleDeleteNote(note.id)}>
+												<span>&times;</span>
+											</button>
+										</>
 									)}
-
-									<button onClick={() => handleDeleteNote(note.id)}>
-										<span>&times;</span>
-									</button>
 								</div>
 							);
 					  })
