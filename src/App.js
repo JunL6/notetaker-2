@@ -15,32 +15,33 @@ function App() {
 	const INITIAL_EDITABLE = { id: 0, text: "" };
 	const [editable, setEditable] = useState(INITIAL_EDITABLE);
 	const [hoveredId, setHoveredId] = useState(0);
-	const [lalaland, setLalaland] = useState(1000);
 
 	useEffect(() => {
 		fetchNotes();
+	}, []);
 
+	useEffect(() => {
 		const createNoteListener = API.graphql(
 			graphqlOperation(onCreateNote)
 		).subscribe({
 			next: (noteData) => {
 				const newNote = noteData.value.data.onCreateNote;
-				console.log(lalaland);
 				// debugger;
-				console.log(notes);
+				// console.log(notes);
+				const updatedNotes = [...notes, newNote];
+				setNotes(updatedNotes.sort(compareNotes));
 			},
 		});
 
 		return function cleanup() {
 			createNoteListener.unsubscribe();
 		};
-	}, []);
+	}, [notes]);
 
 	async function fetchNotes() {
 		try {
 			const result = await API.graphql(graphqlOperation(listNotes));
 			setNotes(result.data.listNotes.items.sort(compareNotes));
-			setLalaland(2000);
 		} catch (error) {
 			console.error(error);
 		}
@@ -61,8 +62,8 @@ function App() {
 
 				setInputValue("");
 				/* update local array of notes */
-				const newNotes = [response.data.createNote, ...notes];
-				setNotes(newNotes.sort(compareNotes));
+				// const newNotes = [response.data.createNote, ...notes];
+				// setNotes(newNotes.sort(compareNotes));
 			})
 			.catch((err) => console.error(err));
 	}
