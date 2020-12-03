@@ -7,7 +7,12 @@ import { faPen } from "@fortawesome/free-solid-svg-icons";
 
 import { listNotes } from "./graphql/queries";
 import { createNote, deleteNote, updateNote } from "./graphql/mutations";
-import { onCreateNote } from "./graphql/subscriptions";
+import {
+	onCreateNote,
+	onUpdateNote,
+	onDeleteNote,
+} from "./graphql/subscriptions";
+import { cleanup } from "@testing-library/react";
 
 function App() {
 	const [inputValue, setInputValue] = useState("");
@@ -35,6 +40,24 @@ function App() {
 
 		return function cleanup() {
 			createNoteListener.unsubscribe();
+		};
+	}, [notes]);
+
+	useEffect(() => {
+		const deleteNoteListener = API.graphql(
+			graphqlOperation(onDeleteNote)
+		).subscribe({
+			next: (deletedNoteData) => {
+				const deletedNote = deletedNoteData.value.data.onDeleteNote;
+				// console.log(deletedNote);
+				// debugger;
+				const updatedNotes = notes.filter((note) => note.id !== deletedNote.id);
+				setNotes(updatedNotes.sort(compareNotes));
+			},
+		});
+
+		return function cleanup() {
+			deleteNoteListener.unsubscribe();
 		};
 	}, [notes]);
 
@@ -72,9 +95,9 @@ function App() {
 		API.graphql(graphqlOperation(deleteNote, { input: { id } }))
 			.then((response) => {
 				// console.log(response.data.deleteNote.id);
-				const deletedNoteId = response.data.deleteNote.id;
-				const updatedNotes = notes.filter((note) => note.id !== deletedNoteId);
-				setNotes(updatedNotes);
+				// const deletedNoteId = response.data.deleteNote.id;
+				// const updatedNotes = notes.filter((note) => note.id !== deletedNoteId);
+				// setNotes(updatedNotes);
 			})
 			.catch((err) => console.error(err));
 	}
