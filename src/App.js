@@ -31,8 +31,6 @@ function App() {
 		).subscribe({
 			next: (noteData) => {
 				const newNote = noteData.value.data.onCreateNote;
-				// debugger;
-				// console.log(notes);
 				const updatedNotes = [...notes, newNote];
 				setNotes(updatedNotes.sort(compareNotes));
 			},
@@ -58,6 +56,27 @@ function App() {
 
 		return function cleanup() {
 			deleteNoteListener.unsubscribe();
+		};
+	}, [notes]);
+
+	useEffect(() => {
+		const updateNoteListener = API.graphql(
+			graphqlOperation(onUpdateNote)
+		).subscribe({
+			next: (updatedNoteData) => {
+				const updatedNote = updatedNoteData.value.data.onUpdateNote;
+				// console.log(deletedNote);
+				// debugger;
+				const updatedNotes = notes.map((note) => {
+					if (note.id === updatedNote.id) return updatedNote;
+					else return note;
+				});
+				setNotes(updatedNotes.sort(compareNotes));
+			},
+		});
+
+		return function cleanup() {
+			updateNoteListener.unsubscribe();
 		};
 	}, [notes]);
 
@@ -128,13 +147,13 @@ function App() {
 				},
 			})
 		);
-		const updatedNote = response.data.updateNote;
-		const updatedNotes = notes.map((note) => {
-			if (note.id === updatedNote.id) return updatedNote;
-			else return note;
-		});
+		// const updatedNote = response.data.updateNote;
+		// const updatedNotes = notes.map((note) => {
+		// 	if (note.id === updatedNote.id) return updatedNote;
+		// 	else return note;
+		// });
 
-		setNotes(updatedNotes);
+		// setNotes(updatedNotes);
 		setEditable(INITIAL_EDITABLE);
 	}
 
