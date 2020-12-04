@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useLayoutEffect } from "react";
 import { withAuthenticator, AmplifySignOut } from "@aws-amplify/ui-react";
 import { API, graphqlOperation } from "aws-amplify";
 import "./App.css";
@@ -12,7 +12,37 @@ import {
 	onUpdateNote,
 	onDeleteNote,
 } from "./graphql/subscriptions";
-import { cleanup } from "@testing-library/react";
+
+const COMPARE_NOTES_CREATEDTIME_ASCENDING = function (a, b) {
+	if (new Date(a.createdAt).getTime() < new Date(b.createdAt).getTime())
+		return 1;
+	else return -1;
+};
+
+const COMPARE_NOTES_CREATEDTIME_DESCENDING = function (a, b) {
+	if (new Date(a.createdAt).getTime() > new Date(b.createdAt).getTime())
+		return 1;
+	else return -1;
+};
+
+const COMPARE_NOTES_UPDATEDTIME_ASCENDING = function (a, b) {
+	if (new Date(a.updatedAt).getTime() < new Date(b.updatedAt).getTime())
+		return 1;
+	else return -1;
+};
+
+const COMPARE_NOTES_UPDATEDTIME_DESCENDING = function (a, b) {
+	if (new Date(a.updatedAt).getTime() > new Date(b.updatedAt).getTime())
+		return 1;
+	else return -1;
+};
+
+const SORTING_FUNCTIONS = [
+	COMPARE_NOTES_CREATEDTIME_ASCENDING,
+	COMPARE_NOTES_CREATEDTIME_DESCENDING,
+	COMPARE_NOTES_UPDATEDTIME_ASCENDING,
+	COMPARE_NOTES_UPDATEDTIME_DESCENDING,
+];
 
 function App() {
 	const [inputValue, setInputValue] = useState("");
@@ -20,6 +50,7 @@ function App() {
 	const INITIAL_EDITABLE = { id: 0, text: "" };
 	const [editable, setEditable] = useState(INITIAL_EDITABLE);
 	const [hoveredId, setHoveredId] = useState(0);
+	const [sortingFunctionIndex, setSortingFucntionIndex] = useState(0);
 
 	useEffect(() => {
 		fetchNotes();
@@ -32,7 +63,7 @@ function App() {
 			next: (noteData) => {
 				const newNote = noteData.value.data.onCreateNote;
 				const updatedNotes = [...notes, newNote];
-				setNotes(updatedNotes.sort(compareNotes));
+				setNotes(updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]));
 			},
 		});
 
@@ -50,7 +81,7 @@ function App() {
 				// console.log(deletedNote);
 				// debugger;
 				const updatedNotes = notes.filter((note) => note.id !== deletedNote.id);
-				setNotes(updatedNotes.sort(compareNotes));
+				setNotes(updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]));
 			},
 		});
 
@@ -71,7 +102,7 @@ function App() {
 					if (note.id === updatedNote.id) return updatedNote;
 					else return note;
 				});
-				setNotes(updatedNotes.sort(compareNotes));
+				setNotes(updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]));
 			},
 		});
 
@@ -83,16 +114,14 @@ function App() {
 	async function fetchNotes() {
 		try {
 			const result = await API.graphql(graphqlOperation(listNotes));
-			setNotes(result.data.listNotes.items.sort(compareNotes));
+			setNotes(
+				result.data.listNotes.items.sort(
+					SORTING_FUNCTIONS[sortingFunctionIndex]
+				)
+			);
 		} catch (error) {
 			console.error(error);
 		}
-	}
-
-	function compareNotes(a, b) {
-		if (new Date(a.createdAt).getTime() < new Date(b.createdAt).getTime())
-			return 1;
-		else return -1;
 	}
 
 	function addNewNote(event) {
@@ -157,8 +186,13 @@ function App() {
 		setEditable(INITIAL_EDITABLE);
 	}
 
-	function onHandleCancelEdit() {
+	function handleCancelEdit() {
 		setEditable(INITIAL_EDITABLE);
+	}
+
+	function handleSelectSorting(event) {
+		setSortingFucntionIndex(parseInt(event.target.value));
+		setNotes(notes.sort(SORTING_FUNCTIONS[parseInt(event.target.value)]));
 	}
 
 	return (
@@ -177,6 +211,17 @@ function App() {
 					<button type="submit">Add</button>
 				</form>
 			</section>
+			{/* sort button */}
+			<div>
+				<label>sort by: </label>
+				<select onChange={handleSelectSorting}>
+					<option value={0}>created time &uarr;</option>
+					<option value={1}>created time &darr;</option>
+					<option value={2}>updated time &uarr;</option>
+					<option value={3}>updated time &darr;</option>
+				</select>
+			</div>
+
 			{/* note list */}
 			<div>
 				{notes.length > 0
@@ -199,7 +244,7 @@ function App() {
 												onChange={handleEditNote}
 											/>
 											<button type="submit">update</button>
-											<button onClick={onHandleCancelEdit}>cancel</button>
+											<button onClick={handleCancelEdit}>cancel</button>
 										</form>
 									) : (
 										<span>{note.note}</span>
@@ -220,7 +265,7 @@ function App() {
 								</div>
 							);
 					  })
-					: "no notes"}
+					: null}
 			</div>
 		</div>
 	);
