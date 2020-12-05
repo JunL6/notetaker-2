@@ -59,19 +59,27 @@ function App() {
 	}, []);
 
 	useEffect(() => {
-		const createNoteListener = API.graphql(
-			graphqlOperation(onCreateNote, { owner: userName })
-		).subscribe({
-			next: (noteData) => {
-				const newNote = noteData.value.data.onCreateNote;
-				const updatedNotes = [...notes, newNote];
-				setNotes(updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]));
-			},
-		});
+		try {
+			const createNoteListener = API.graphql(
+				graphqlOperation(onCreateNote, { owner: userName })
+			).subscribe({
+				next: (noteData) => {
+					const newNote = noteData.value.data.onCreateNote;
+					// const updatedNotes = [...notes, newNote];
+					// setNotes(updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]));
+					setNotes((prevNotes) => {
+						const updatedNotes = [...prevNotes, newNote];
+						return updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]);
+					});
+				},
+			});
 
-		return function cleanup() {
-			createNoteListener.unsubscribe();
-		};
+			return function cleanup() {
+				createNoteListener.unsubscribe();
+			};
+		} catch (err) {
+			console.error(err);
+		}
 	}, [notes, userName]);
 
 	useEffect(() => {
@@ -79,11 +87,15 @@ function App() {
 			graphqlOperation(onDeleteNote, { owner: userName })
 		).subscribe({
 			next: (deletedNoteData) => {
-				const deletedNote = deletedNoteData.value.data.onDeleteNote;
+				const { onDeleteNote: deletedNote } = deletedNoteData.value.data;
 				// console.log(deletedNote);
 				// debugger;
-				const updatedNotes = notes.filter((note) => note.id !== deletedNote.id);
-				setNotes(updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]));
+				setNotes((prevNotes) => {
+					const updatedNotes = prevNotes.filter(
+						(note) => note.id !== deletedNote.id
+					);
+					return updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]);
+				});
 			},
 		});
 
@@ -100,11 +112,15 @@ function App() {
 				const updatedNote = updatedNoteData.value.data.onUpdateNote;
 				// console.log(deletedNote);
 				// debugger;
-				const updatedNotes = notes.map((note) => {
-					if (note.id === updatedNote.id) return updatedNote;
-					else return note;
+
+				setNotes((prevNotes) => {
+					const updatedNotes = prevNotes.map((note) => {
+						if (note.id === updatedNote.id) return updatedNote;
+						else return note;
+					});
+
+					return updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]);
 				});
-				setNotes(updatedNotes.sort(SORTING_FUNCTIONS[sortingFunctionIndex]));
 			},
 		});
 
