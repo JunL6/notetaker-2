@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { withAuthenticator, AmplifySignOut } from "@aws-amplify/ui-react";
-import { API, graphqlOperation } from "aws-amplify";
+import { API, graphqlOperation, Auth } from "aws-amplify";
 import "./App.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPen } from "@fortawesome/free-solid-svg-icons";
@@ -51,14 +51,16 @@ function App() {
 	const [editable, setEditable] = useState(INITIAL_EDITABLE);
 	const [hoveredId, setHoveredId] = useState(0);
 	const [sortingFunctionIndex, setSortingFucntionIndex] = useState(0);
+	const [userName, setUserName] = useState();
 
 	useEffect(() => {
+		getCurrentUserInfo();
 		fetchNotes();
 	}, []);
 
 	useEffect(() => {
 		const createNoteListener = API.graphql(
-			graphqlOperation(onCreateNote)
+			graphqlOperation(onCreateNote, { owner: userName })
 		).subscribe({
 			next: (noteData) => {
 				const newNote = noteData.value.data.onCreateNote;
@@ -70,11 +72,11 @@ function App() {
 		return function cleanup() {
 			createNoteListener.unsubscribe();
 		};
-	}, [notes]);
+	}, [notes, userName]);
 
 	useEffect(() => {
 		const deleteNoteListener = API.graphql(
-			graphqlOperation(onDeleteNote)
+			graphqlOperation(onDeleteNote, { owner: userName })
 		).subscribe({
 			next: (deletedNoteData) => {
 				const deletedNote = deletedNoteData.value.data.onDeleteNote;
@@ -88,11 +90,11 @@ function App() {
 		return function cleanup() {
 			deleteNoteListener.unsubscribe();
 		};
-	}, [notes]);
+	}, [notes, userName]);
 
 	useEffect(() => {
 		const updateNoteListener = API.graphql(
-			graphqlOperation(onUpdateNote)
+			graphqlOperation(onUpdateNote, { owner: userName })
 		).subscribe({
 			next: (updatedNoteData) => {
 				const updatedNote = updatedNoteData.value.data.onUpdateNote;
@@ -109,7 +111,18 @@ function App() {
 		return function cleanup() {
 			updateNoteListener.unsubscribe();
 		};
-	}, [notes]);
+	}, [notes, userName]);
+
+	async function getCurrentUserInfo() {
+		try {
+			const currentUser = await Auth.currentUserInfo();
+			// console.log(currentUser);
+			// console.log(typeof currentUser.username);
+			setUserName(currentUser.username);
+		} catch (error) {
+			console.error(error);
+		}
+	}
 
 	async function fetchNotes() {
 		try {
@@ -198,6 +211,7 @@ function App() {
 	return (
 		<div className="App">
 			{console.log(notes)}
+			{console.log(userName)}
 			<AmplifySignOut />
 			<section>
 				<h1>notetaking app</h1>
@@ -271,4 +285,4 @@ function App() {
 	);
 }
 
-export default withAuthenticator(App, { includeGreetings: true });
+export default withAuthenticator(App);
